@@ -4,6 +4,7 @@ local normal_mode = "NORMAL"
 local current_mode = normal_mode
 local virtual_modes = {}
 local notify = require("virtual-modes.utils.notify").notify
+local validator = require("virtual-modes.validate")
 local global_defaults = {
 	keymap_enter_prefix = "",
 	keymap_exit = "<esc>",
@@ -62,45 +63,16 @@ function M.get_mode_names()
 	return names
 end
 
-local function is_table(value)
-	return type(value) == "table"
-end
-
-local function is_bool(value)
-	return type(value) == "boolean"
-end
-
-local function is_string(value)
-	return type(value) == "string"
-end
-
-local function is_function(value)
-	return type(value) == "function"
-end
-
-local function is_string_or_function(value)
-	return type(value) == "string" or type(value) == "function"
-end
-
 -- Execute vim command strings or lua functions.
 -- Everything else gets ignored.
 local function exec_string_or_function(value)
-	if is_string(value) then
+	if type(value) == "string" then
 		vim.cmd(value)
-	elseif is_function(value) then
+	elseif type(value) == "function" then
 		value()
 	else
 		notify("Type not allowed: " .. type(value), "debug")
 	end
-end
-
-local function is_valid_mode_config(mode_config)
-	local c = mode_config
-	return is_string(c.name)
-		and c.name ~= normal_mode
-		and is_string(c.keymap_enter)
-		and is_string_or_function(c.on_enter)
-		and is_string_or_function(c.on_exit)
 end
 
 local function add_defaults(mode_config)
@@ -111,25 +83,11 @@ local function add_defaults(mode_config)
 	return c
 end
 
-local function print_mode_config_warning(mode_config)
-	local c = mode_config
-	if not is_string(c.name) then
-		notify("Mode should have a name.", "warn")
-	elseif c.name == normal_mode then
-		notify("Mode cannot be named '" .. normal_mode .. "'.", "warn")
-	elseif not is_string(c.keymap_enter) then
-		notify("Field keymap_enter must be a string, not: " .. type(c.keymap_enter), "warn")
-	elseif not is_string_or_function(c.on_enter) then
-		notify("Field 'on_enter' must be a string or lua function, not: " .. type(c.on_enter), "warn")
-	elseif not is_string_or_function(c.on_exit) then
-		notify("Field 'on_exit' must be a string or lua function, not: " .. type(c.on_exit), "warn")
-	end
-end
 -- Add a mode. Overwrite if mode already exists.
 function M.add_mode(mode_config)
 	mode_config = add_defaults(mode_config)
-	if not is_valid_mode_config(mode_config) then
-		print_mode_config_warning(mode_config)
+	if not validator.is_valid_mode_config(mode_config) then
+		validator.print_mode_config_warning(mode_config)
 	else
 		local c = mode_config
 		local name = c.name
@@ -159,7 +117,7 @@ function M.remove_mode(name)
 end
 
 function M.enter_mode(name)
-	if not is_string(name) then
+	if not type(name) == "string" then
 		notify("Mode should be a string.", "warn")
 	elseif not M.mode_is_available(name) then
 		notify("Mode '" .. name .. "' is not recognized.", "warn")
@@ -186,7 +144,7 @@ function M.setup(config)
 
 	-- Add all modes
 	local modes = config.modes or {}
-	if not is_table(modes) then
+	if type(modes) ~= "table" then
 		notify("Field 'modes' should be a table, not: " .. type(table), "warn")
 	else
 		for name, mode in pairs(modes) do
