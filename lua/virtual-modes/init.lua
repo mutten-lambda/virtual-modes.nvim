@@ -9,16 +9,8 @@ local global_defaults = {
 	keymap_enter_prefix = "",
 	enable_keymap_prefix = true,
 	keymap_exit = "<esc>",
-	on_enter = {
-		function()
-			notify("Entered mode " .. M.get_virtual_mode())
-		end,
-	},
-	on_exit = {
-		function()
-			notify("Exiting mode " .. M.get_virtual_mode())
-		end,
-	},
+	on_enter = {},
+	on_exit = {},
 }
 
 -- Mode utility functions
@@ -68,20 +60,66 @@ local function exec_string_or_function_table(value)
 	end
 end
 
--- Add missing fields the default value.
-local function add_defaults(mode_config)
-	local c = mode_config
+local function combine_executables(list)
+	local executables = {}
+	for _, value in ipairs(list) do
+		if type(value) == "table" then
+			for _, element in ipairs(value) do
+				executables[#executables + 1] = element
+			end
+		else
+			executables[#executables + 1] = value
+		end
+	end
+	return executables
+end
+
+local function add_general_defaults(config)
+	local c = config
 	local gd = global_defaults
 	c.enable_keymap_prefix = c.enable_keymap_prefix or gd.enable_keymap_prefix
-	c.keymap_enter = gd.keymap_enter_prefix .. c.keymap_enter -- TODO use enable_keymap_prefix
-	c.on_enter = c.on_enter or gd.on_enter -- TODO both local and global
-	c.on_exit = c.on_exit or gd.on_exit -- TODO both local and global
+	c.on_enter = combine_executables({
+		gd.on_enter,
+		c.on_enter,
+		--[[ keymaps, ]]
+	})
+	c.on_exit = combine_executables({
+		gd.on_exit,
+		c.on_exit,
+		--[[ keymaps, ]]
+	})
+	return c
+end
+
+-- Add missing fields the default value.
+local function add_mode_defaults(mode_config)
+	local c = add_general_defaults(mode_config)
+	local gd = global_defaults
+
+	-- Remove unnecessary fields
+	c.keymap_enter_prefix = nil
+
+	-- Construct keymap_enter
+	local prefix = ""
+	if c.enable_keymap_prefix then
+		prefix = gd.keymap_enter_prefix
+	end
+	c.keymap_enter = prefix .. c.keymap_enter
+
+	return c
+end
+
+local function add_global_defaults(config)
+	local c = add_general_defaults(config)
+	local gd = global_defaults
+	c.keymap_enter_prefix = c.keymap_enter_prefix or gd.keymap_enter_prefix
+	c.enable_keymap_prefix = c.enable_keymap_prefix or gd.enable_keymap_prefix
 	return c
 end
 
 -- Add a mode. Overwrite if mode already exists.
 local function add_mode(mode_config)
-	mode_config = add_defaults(mode_config)
+	mode_config = add_mode_defaults(mode_config)
 	local c = mode_config
 	local name = c.name
 
@@ -102,12 +140,6 @@ local function add_mode(mode_config)
 		"<cmd>lua require('virtual-modes').enter_mode('" .. name .. "')<cr>",
 		opts
 	)
-end
-
--- Remove a mode, if it exists.
-function M.remove_mode(name)
-	-- TODO check if name is key? What if name is table or nil..
-	virtual_modes[name] = nil
 end
 
 function M.enter_mode(name)
@@ -133,16 +165,11 @@ function M.exit_mode()
 end
 
 function M.setup(config)
-	-- TODO validate input: on_* should be table
 	if not validate.is_config(config) then
 		validate.print_config_warning(config)
 	else
 		-- Change global defaults
-		local gd = global_defaults
-		gd.keymap_enter_prefix = config.keymap_enter_prefix or gd.keymap_enter_prefix
-		gd.enable_keymap_prefix = config.enable_keymap_prefix or gd.enable_keymap_prefix
-		gd.on_enter = config.on_enter or gd.on_enter
-		gd.on_exit = config.on_exit or gd.on_exit
+		global_defaults = add_global_defaults(config)
 
 		-- Add all modes
 		local modes = config.modes or {}

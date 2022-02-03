@@ -30,6 +30,16 @@ function M.init_test(v_modes)
 	virtual_modes = v_modes
 	notify("Setting up virtual-modes!", "debug")
 	virtual_modes.setup({
+		on_enter = {
+			function()
+				notify("Entered mode " .. v_modes.get_virtual_mode())
+			end,
+		},
+		on_exit = {
+			function()
+				notify("Exiting mode " .. v_modes.get_virtual_mode())
+			end,
+		},
 		keymap_enter_prefix = "<leader>e",
 		modes = {
 			GIT = {
@@ -49,8 +59,8 @@ function M.init_test(v_modes)
 			},
 			NORD = {
 				keymap_enter = "n",
-				on_enter = "colorscheme nord",
-				on_exit = "colorscheme gruvbox",
+				on_enter = {"colorscheme nord", "set nonumber", "set norelativenumber"},
+				on_exit = {"colorscheme gruvbox", "set number", "set relativenumber"},
 			},
 		},
 	})

@@ -29,7 +29,7 @@ local function is_table_of_executables(value)
 end
 
 local function is_executable(value)
-	return is_simple_executable(value) or is_table_of_executables()
+	return is_simple_executable(value) or is_table_of_executables(value)
 end
 
 local is_valid = {
@@ -55,8 +55,7 @@ function M.is_mode(mode_config)
 			end
 		end
 	end
-	-- return result
-	return true
+	return result
 end
 
 local function is_table_of_modes(value)
@@ -119,6 +118,7 @@ local function should_be_executable(key, value)
 			.. ".",
 		"warn"
 	)
+	notify(key .. ":\n".. vim.inspect(value), "debug")
 end
 
 local print_warning = {
@@ -148,14 +148,15 @@ end
 print_warning.modes = M.print_mode_config_warning
 
 function M.print_config_warning(config)
+	notify("Config:\n" .. vim.inspect(config), "debug")
 	if type(config) ~= "table" then
 		notify("Global config should be a table", "warn")
 	else
 		for key, value in pairs(config) do
-			if type(is_valid[key]) == "function" and not is_valid[key](value) then
-				print_warning[key](key, value)
-			else
+			if type(is_valid[key]) == nil then
 				notify("Unknown field: " .. key .. ".", "warn")
+			elseif not is_valid[key](value) then
+				print_warning[key](key, value)
 			end
 		end
 	end
