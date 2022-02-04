@@ -96,9 +96,6 @@ local function add_mode_defaults(mode_config)
 	local c = add_general_defaults(mode_config)
 	local gd = global_defaults
 
-	-- Remove unnecessary fields
-	c.keymap_enter_prefix = nil
-
 	-- Construct keymap_enter
 	local prefix = ""
 	if c.enable_keymap_prefix then
