@@ -32,6 +32,23 @@ local function is_executable(value)
 	return is_simple_executable(value) or is_table_of_executables(value)
 end
 
+local function is_keymap(value)
+	local result = true
+	-- TODO add check
+	return result
+end
+
+local function is_table_of_keymaps(value)
+	local result = true
+	if type(value) ~= "table" then
+		result = false
+	else
+		for _, v in ipairs(value) do
+			result = result and is_keymap(v)
+		end
+	end
+	return result
+end
 local is_valid = {
 	name = is_string,
 	keymap_enter = is_string,
@@ -40,6 +57,7 @@ local is_valid = {
 	on_enter = is_executable,
 	on_exit = is_executable,
 	modes = nil, -- cannot be set yet since the defining function uses the is_valid table
+	keymaps = is_table_of_keymaps
 }
 
 -- TODO make local
@@ -129,6 +147,7 @@ local print_warning = {
 	on_enter = should_be_executable,
 	on_exit = should_be_executable,
 	modes = nil, -- cannot be set yet since the defining function uses the is_valid table
+	keymaps = should_be_keymaps
 }
 
 function M.print_mode_config_warning(name, mode_config)

@@ -11,6 +11,7 @@ local global_defaults = {
 	keymap_exit = "<esc>",
 	on_enter = {},
 	on_exit = {},
+	keymaps = {},
 }
 
 -- Mode utility functions
@@ -78,6 +79,10 @@ local function add_general_defaults(config)
 	local c = config
 	local gd = global_defaults
 	c.enable_keymap_prefix = c.enable_keymap_prefix or gd.enable_keymap_prefix
+	c.keymaps = combine_executables({
+		gd.keymaps,
+		c.keymaps,
+	})
 	c.on_enter = combine_executables({
 		gd.on_enter,
 		c.on_enter,
