@@ -33,22 +33,22 @@ local function is_executable(value)
 end
 
 local function is_keymap(value)
-	local result = true
 	-- TODO add check
+	local result = type(value) == "table"
 	return result
 end
 
 local function is_table_of_keymaps(value)
-	local result = true
-	if type(value) ~= "table" then
-		result = false
-	else
-		for _, v in ipairs(value) do
-			result = result and is_keymap(v)
+	local result = false
+	if type(value) == "table" then
+		result = true
+		for _, keymap in ipairs(value) do
+			result = result and is_keymap(keymap)
 		end
 	end
 	return result
 end
+
 local is_valid = {
 	name = is_string,
 	keymap_enter = is_string,
@@ -57,7 +57,7 @@ local is_valid = {
 	on_enter = is_executable,
 	on_exit = is_executable,
 	modes = nil, -- cannot be set yet since the defining function uses the is_valid table
-	keymaps = is_table_of_keymaps
+	keymaps = is_table_of_keymaps,
 }
 
 -- TODO make local
@@ -136,7 +136,18 @@ local function should_be_executable(key, value)
 			.. ".",
 		"warn"
 	)
-	notify(key .. ":\n".. vim.inspect(value), "debug")
+	notify(key .. ":\n" .. vim.inspect(value), "debug")
+end
+
+local function should_be_keymaps(key, value)
+	notify(
+		"Field '"
+			.. key
+			.. "' a valid table of keymap configurations. Got:\n"
+			.. vim.inspect(value)
+			.. "",
+		"warn"
+	)
 end
 
 local print_warning = {
@@ -147,7 +158,7 @@ local print_warning = {
 	on_enter = should_be_executable,
 	on_exit = should_be_executable,
 	modes = nil, -- cannot be set yet since the defining function uses the is_valid table
-	keymaps = should_be_keymaps
+	keymaps = should_be_keymaps,
 }
 
 function M.print_mode_config_warning(name, mode_config)
