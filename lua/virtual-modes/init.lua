@@ -3,16 +3,10 @@ local M = {}
 local normal_mode = "NORMAL"
 local current_mode = normal_mode
 local virtual_modes = {}
+local global_settings = {}
+
 local notify = require("virtual-modes.utils.notify").notify
 local validate = require("virtual-modes.validate")
-local global_defaults = {
-	keymap_enter_prefix = "",
-	enable_keymap_prefix = true,
-	keymap_exit = "<esc>",
-	on_enter = {},
-	on_exit = {},
-	keymaps = {},
-}
 
 -- Mode utility functions
 -- TODO check if other modules can change the returned values. This would be unsafe!
@@ -77,19 +71,19 @@ end
 
 local function add_general_defaults(config)
 	local c = config
-	local gd = global_defaults
-	c.enable_keymap_prefix = c.enable_keymap_prefix or gd.enable_keymap_prefix
+	local gs = global_settings
+	c.enable_keymap_prefix = c.enable_keymap_prefix or gs.enable_keymap_prefix
 	c.keymaps = combine_executables({
-		gd.keymaps,
+		gs.keymaps,
 		c.keymaps,
 	})
 	c.on_enter = combine_executables({
-		gd.on_enter,
+		gs.on_enter,
 		c.on_enter,
 		--[[ keymaps, ]]
 	})
 	c.on_exit = combine_executables({
-		gd.on_exit,
+		gs.on_exit,
 		c.on_exit,
 		--[[ keymaps, ]]
 	})
@@ -97,14 +91,14 @@ local function add_general_defaults(config)
 end
 
 -- Add missing fields the default value.
-local function add_mode_defaults(mode_config)
+local function apply_settings(mode_config)
 	local c = add_general_defaults(mode_config)
-	local gd = global_defaults
+	local gs = global_settings
 
 	-- Construct keymap_enter
 	local prefix = ""
 	if c.enable_keymap_prefix then
-		prefix = gd.keymap_enter_prefix
+		prefix = gs.keymap_enter_prefix
 	end
 	c.keymap_enter = prefix .. c.keymap_enter
 
@@ -113,7 +107,7 @@ end
 
 local function add_global_defaults(config)
 	local c = add_general_defaults(config)
-	local gd = global_defaults
+	local gd = require("virtual-modes.defaults").get_defaults()
 	c.keymap_enter_prefix = c.keymap_enter_prefix or gd.keymap_enter_prefix
 	c.enable_keymap_prefix = c.enable_keymap_prefix or gd.enable_keymap_prefix
 	return c
@@ -121,7 +115,7 @@ end
 
 -- Add a mode. Overwrite if mode already exists.
 local function add_mode(mode_config)
-	mode_config = add_mode_defaults(mode_config)
+	mode_config = apply_settings(mode_config)
 	local c = mode_config
 	local name = c.name
 
@@ -171,7 +165,7 @@ function M.setup(config)
 		validate.print_config_warning(config)
 	else
 		-- Change global defaults
-		global_defaults = add_global_defaults(config)
+		global_settings = add_global_defaults(config)
 
 		-- Add all modes
 		local modes = config.modes or {}
