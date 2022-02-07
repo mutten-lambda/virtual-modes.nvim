@@ -57,7 +57,7 @@ end
 
 local function combine_executables(list)
 	local executables = {}
-	for _, value in ipairs(list) do
+	for _, value in pairs(list) do
 		if type(value) == "table" then
 			for _, element in pairs(value) do
 				executables[#executables + 1] = element
@@ -69,9 +69,33 @@ local function combine_executables(list)
 	return executables
 end
 
-local function add_general_defaults(config)
-	local c = config
+local function keymap_setter(keymaps)
+	return function ()
+		local mode, lhs, rhs, opts
+		for _, keymap in ipairs(keymaps) do
+			mode, lhs, rhs, opts = keymap[1], keymap[2], keymap[3], keymap[4] or {}
+			vim.api.nvim_set_keymap(mode, lhs, rhs, opts)
+			-- TODO save old keymaps
+		end
+	end
+end
+
+local function keymap_deleter(keymaps)
+	return function ()
+		local mode, lhs
+		for _, keymap in ipairs(keymaps) do
+			mode, lhs = keymap[1], keymap[2]
+			vim.api.nvim_del_keymap(mode, lhs)
+			-- TODO restore old keymaps
+		end
+	end
+end
+
+-- Add missing fields the default value.
+local function apply_settings(mode_config)
+	local c = mode_config
 	local gs = global_settings
+	-- TODO false or true == true, overloaded for nil and boolean values..
 	c.enable_keymap_prefix = c.enable_keymap_prefix or gs.enable_keymap_prefix
 	c.keymaps = combine_executables({
 		gs.keymaps,
@@ -80,20 +104,13 @@ local function add_general_defaults(config)
 	c.on_enter = combine_executables({
 		gs.on_enter,
 		c.on_enter,
-		--[[ keymaps, ]]
+		keymap_setter(c.keymaps),
 	})
 	c.on_exit = combine_executables({
 		gs.on_exit,
 		c.on_exit,
-		--[[ keymaps, ]]
+		keymap_deleter(c.keymaps),
 	})
-	return c
-end
-
--- Add missing fields the default value.
-local function apply_settings(mode_config)
-	local c = add_general_defaults(mode_config)
-	local gs = global_settings
 
 	-- Construct keymap_enter
 	local prefix = ""
@@ -106,10 +123,22 @@ local function apply_settings(mode_config)
 end
 
 local function add_global_defaults(config)
-	local c = add_general_defaults(config)
+	local c = config
 	local gd = require("virtual-modes.defaults").get_defaults()
-	c.keymap_enter_prefix = c.keymap_enter_prefix or gd.keymap_enter_prefix
+	-- TODO false or true == true, overloaded for nil and boolean values..
 	c.enable_keymap_prefix = c.enable_keymap_prefix or gd.enable_keymap_prefix
+	c.keymaps = combine_executables({
+		gd.keymaps,
+		c.keymaps,
+	})
+	c.on_enter = combine_executables({
+		gd.on_enter,
+		c.on_enter,
+	})
+	c.on_exit = combine_executables({
+		gd.on_exit,
+		c.on_exit,
+	})
 	return c
 end
 
