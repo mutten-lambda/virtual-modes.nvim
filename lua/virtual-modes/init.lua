@@ -59,7 +59,7 @@ local function combine_executables(list)
 	local executables = {}
 	for _, value in ipairs(list) do
 		if type(value) == "table" then
-			for _, element in ipairs(value) do
+			for _, element in pairs(value) do
 				executables[#executables + 1] = element
 			end
 		else
