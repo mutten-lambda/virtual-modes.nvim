@@ -4,6 +4,7 @@ local normal_mode = "NORMAL"
 local current_mode = normal_mode
 local virtual_modes = {}
 local global_settings = {}
+local states = {}
 
 local notify = require("virtual-modes.utils.notify").notify
 local validate = require("virtual-modes.validate")
@@ -33,24 +34,24 @@ end
 
 -- Execute vim command strings or lua functions.
 -- Everything else gets ignored.
-local function exec_string_or_function(value)
-	if type(value) == "string" then
-		vim.cmd(value)
-	elseif type(value) == "function" then
-		value()
+local function exec_string_or_function(cmd, state)
+	if type(cmd) == "string" then
+		vim.cmd(cmd)
+	elseif type(cmd) == "function" then
+		cmd(state)
 	else
-		notify("Type not allowed: " .. type(value), "debug")
+		notify("Type not allowed: " .. type(cmd), "debug")
 	end
 end
 
 -- Execute vim command strings or lua functions, possible in a table.
 -- Everything else gets ignored.
-local function exec_string_or_function_table(value)
-	if type(value) ~= "table" then
-		exec_string_or_function(value)
+local function exec_string_or_function_table(cmds, state)
+	if type(cmds) ~= "table" then
+		exec_string_or_function(cmds, state)
 	else
-		for _, v in ipairs(value) do
-			exec_string_or_function(v)
+		for _, v in ipairs(cmds) do
+			exec_string_or_function(v, state)
 		end
 	end
 end
@@ -156,6 +157,9 @@ local function add_mode(mode_config)
 		on_exit = c.on_exit,
 	}
 
+	-- Adding state
+	states[name] = {}
+
 	-- Setting keymaps
 	local opts = { noremap = true }
 	vim.api.nvim_set_keymap("n", "<esc>", "<cmd>lua require('virtual-modes').exit_mode()<cr><esc>", opts)
@@ -177,14 +181,14 @@ function M.enter_mode(name)
 			M.exit_mode()
 		end
 		current_mode = name
-		exec_string_or_function_table(virtual_modes[name].on_enter)
+		exec_string_or_function_table(virtual_modes[name].on_enter, states[name])
 		-- set_keymaps(name)
 	end
 end
 
 function M.exit_mode()
 	if current_mode ~= normal_mode then
-		exec_string_or_function_table(virtual_modes[current_mode].on_exit)
+		exec_string_or_function_table(virtual_modes[current_mode].on_exit, states[current_mode])
 		current_mode = normal_mode
 	end
 end
