@@ -123,5 +123,4 @@ or:
 		keymaps = ...,
 		on_enter = ...,
 		on_exit = ...,
-		data = ...,
 	}
