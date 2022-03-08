@@ -58,8 +58,10 @@ Currently in HELP.md.
 - [ ] normalise input
 - [ ] print usefull warnings
 - [ ] refactor from local to _ 
+- [ ] refactor utils
 - [ ] restore old keymaps
 - [ ] write toggle utility function to toggle vim options and lua variables
 - [ ] write vimdoc documentation
+- [ ] write lua documentation
 - [ ] add examples to README
 - [ ] which-key integration
