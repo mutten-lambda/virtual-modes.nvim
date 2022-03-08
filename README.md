@@ -18,6 +18,7 @@ Often, you're focussing on concrete subtasks:
 - `DEBUG`ging
 - editing markdown `TABLE`s
 - clutter-free `ZEN` writing
+- `INCREMENTAL`ly selecting text
 - ...
 
 The idea of this plugin is to make it easy to make overlays for `NORMAL` mode -- virtual modes --
