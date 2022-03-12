@@ -1,7 +1,7 @@
 local M = {}
 
 local normal_mode = "NORMAL" -- TODO fix code duplication (see init.lua)
-local notify = require("virtual-modes.utils.notify").notify
+local notify = require("virtual-modes.utils").notify
 
 -- Validating functions
 local function is_bool(value)
